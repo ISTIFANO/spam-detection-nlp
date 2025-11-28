@@ -1,0 +1,329 @@
+{
+	"info": {
+		"_postman_id": "whatsapp-cloud-api-calling-collection",
+		"name": "WhatsApp Cloud API Calling - Full Collection",
+		"description": "Complete Postman collection for WhatsApp Cloud API Calling (v19.0+). Includes settings, permissions, outgoing/incoming calls. \n\n🚀 Setup:\n1. Import this collection.\n2. Create Environment: Add variables - `base_url`[](https://graph.facebook.com/v19.0), `access_token` (your system user token), `phone_number_id` (your WABA phone ID), `waba_id` (WhatsApp Business Account ID), `user_wa_id` (+1234567890), `user_phone` (+1234567890), `call_id` (from webhook).\n3. Fork & test in sandbox first.\n\n📚 Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/calling/\n⚠️ Permissions: whatsapp_business_messaging, whatsapp_business_management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://graph.facebook.com/v19.0"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "📋 Settings",
+			"item": [
+				{
+					"name": "GET Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/settings?include_sip_credentials=true",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "settings"],
+							"query": [
+								{
+									"key": "include_sip_credentials",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "POST Update Settings (Enable Calling + SIP)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Success\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"calling\": {\n    \"status\": \"ENABLED\",\n    \"call_icon_visibility\": \"DEFAULT\",\n    \"callback_permission_status\": \"ENABLED\",\n    \"sip\": {\n      \"status\": \"ENABLED\",\n      \"servers\": [\n        {\n          \"hostname\": \"sip.example.com\",\n          \"port\": \"5061\"\n        }\n      ]\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/settings",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "settings"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔐 Permissions",
+			"item": [
+				{
+					"name": "GET User Permissions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/call_permissions?user_wa_id={{user_wa_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "call_permissions"],
+							"query": [
+								{
+									"key": "user_wa_id",
+									"value": "{{user_wa_id}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "POST Request Permission (Interactive Msg)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{user_phone}}\",\n  \"type\": \"interactive\",\n  \"interactive\": {\n    \"type\": \"call_permission_request\",\n    \"action\": {\n      \"name\": \"call_permission_request\"\n    },\n    \"body\": {\n      \"text\": \"We'd like to call you about your order. Allow?\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/messages",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "messages"]
+						}
+					}
+				},
+				{
+					"name": "POST Create Permission Template",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"call_permission_request_template\",\n  \"language\": \"en_US\",\n  \"category\": \"UTILITY\",\n  \"components\": [\n    {\n      \"type\": \"BODY\",\n      \"text\": \"We'd like to call you about your order. {{1}}\",\n      \"example\": {\n        \"body_text\": [\n          [\n            \"Order #123\"\n          ]\n        ]\n      }\n    },\n    {\n      \"type\": \"BUTTONS\",\n      \"sub_type\": \"CALL_TO_ACTION\",\n      \"buttons\": [\n        {\n          \"type\": \"PHONE_NUMBER\",\n          \"text\": \"Allow Call\",\n          \"phone_number\": \"{{phone_number_id}}\"\n        }\n      ]\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/{{waba_id}}/message_templates",
+							"host": ["{{base_url}}"],
+							"path": ["{{waba_id}}", "message_templates"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📞 Outgoing Calls",
+			"item": [
+				{
+					"name": "POST Initiate Call (Connect)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{user_phone}}\",\n  \"action\": \"connect\",\n  \"session\": {\n    \"sdp_type\": \"offer\",\n    \"sdp\": \"v=0\\r\\no=- 123456 2 IN IP4 0.0.0.0\\r\\ns=-\\r\\nt=0 0\\r\\na=msid-semantic: WMS dZdZxE0z5Q6hC7vX8Y9Z\\r\\n...\"  // Replace with real SDP Offer\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/calls",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "calls"]
+						}
+					}
+				},
+				{
+					"name": "POST Terminate Call",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"messaging_product\": \"whatsapp\",\n  \"call_id\": \"{{call_id}}\",\n  \"action\": \"terminate\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/calls",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "calls"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📥 Incoming Calls",
+			"item": [
+				{
+					"name": "POST Pre-Accept Incoming",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"messaging_product\": \"whatsapp\",\n  \"call_id\": \"{{call_id}}\",\n  \"action\": \"pre_accept\",\n  \"session\": {\n    \"sdp_type\": \"answer\",\n    \"sdp\": \"v=0\\r\\no=- 123456 2 IN IP4 0.0.0.0\\r\\ns=-\\r\\n...\"  // Replace with real SDP Answer\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/calls",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "calls"]
+						}
+					}
+				},
+				{
+					"name": "POST Accept Incoming",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"messaging_product\": \"whatsapp\",\n  \"call_id\": \"{{call_id}}\",\n  \"action\": \"accept\",\n  \"session\": {\n    \"sdp_type\": \"answer\",\n    \"sdp\": \"v=0\\r\\no=- 123456 2 IN IP4 0.0.0.0\\r\\n...\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/calls",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "calls"]
+						}
+					}
+				},
+				{
+					"name": "POST Reject Incoming",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"messaging_product\": \"whatsapp\",\n  \"call_id\": \"{{call_id}}\",\n  \"action\": \"reject\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/{{phone_number_id}}/calls",
+							"host": ["{{base_url}}"],
+							"path": ["{{phone_number_id}}", "calls"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🪝 Webhooks",
+			"item": [
+				{
+					"name": "Verify Webhook (GET)",
+					"description": "Hub.mode=subscribe&hub.challenge=Echo&hub.verify_token=your_token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://your-webhook-url/verify",
+							"host": ["your-webhook-url"],
+							"path": ["verify"],
+							"query": [
+								{
+									"key": "hub.mode",
+									"value": "subscribe"
+								},
+								{
+									"key": "hub.challenge",
+									"value": "Echo"
+								},
+								{
+									"key": "hub.verify_token",
+									"value": "your_verify_token"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Receive Webhook (POST)",
+					"description": "Simulate webhook payload. Subscribe to 'calls' in App Dashboard.",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Hub-Signature-256",
+								"value": "sha256=your_signature"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entry\": [{\n    \"changes\": [{\n      \"field\": \"calls\",\n      \"value\": {\n        \"call_id\": \"wavid.123\",\n        \"direction\": \"INBOUND\",\n        \"status\": \"ACCEPTED\",\n        \"sdp\": \"...\"\n      }\n    }]\n  }]\n}"
+						},
+						"url": {
+							"raw": "https://your-webhook-url/webhook",
+							"host": ["your-webhook-url"],
+							"path": ["webhook"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
