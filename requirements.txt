@@ -1,0 +1,10 @@
+wordcloud
+pyparsing 
+pillow 
+numpy
+kiwisolver
+fonttools
+cycler
+contourpy
+matplotlib
+wordcloud
